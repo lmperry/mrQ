@@ -249,8 +249,8 @@ if SGE==1;
         
     end
     
-    % NO SGE
-    %using the local computer to fit T1 and the sunGrid
+% NO SGE
+% using the local computer to fit T1 and the sunGrid
 else
     
     fprintf('\n fit the T1 map localy, may be slow. SunGrid use can be much faster             \n');
@@ -275,7 +275,10 @@ else
     
     
     if ~isempty(jobindex)
-        for i=jobindex
+        % Run PARFOR HERE.
+        fprintf('Attempting to run jobs using parallel computing toolbox...\n');
+        vistaInitParpool('performance');
+        parfor i=jobindex
             mrQ_fitT1PDLW_SGE(opt,jumpindex,i);
         end
     end

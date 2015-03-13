@@ -257,7 +257,7 @@ if SGE==1;
     %using the local computer to fit B1 and the sunGrid
 else
     
- fprintf('\n fit the B1 map localy, may be slow. SunGrid use can be much faster             \n');
+ fprintf('\n Fitting the B1 map locally, this operation may be slow... \nUsing SunGridEngine would be much faster!             \n');
    
     if (~exist([outDir '/tmpSG'],'dir')), mkdir([outDir '/tmpSG']);
         jobindex=1:ceil(length(opt.wh)/jumpindex);
@@ -277,11 +277,14 @@ else
     end
         
         
-        if ~isempty(jobindex)
-        for i=jobindex
+    if ~isempty(jobindex)
+        % Run ParFor here!
+        fprintf('Attempting to run jobs using parallel computing toolbox...\n');
+        vistaInitParpool('performance');
+        parfor i=jobindex
             mrQ_fitB1PD_SGE(opt,500,i)
         end
-        end
+    end
     
     
       

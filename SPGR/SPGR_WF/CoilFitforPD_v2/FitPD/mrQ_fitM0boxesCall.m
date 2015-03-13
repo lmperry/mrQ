@@ -87,13 +87,24 @@ if SunGrid==1;
     end
     
 else
+    
+    % NO SGE
+    
     % with out grid call that will take very long
-    disp(  'No parallre computation grid is used to fit PD. Using the local machin instaed , this may take very long time !!!');
-    jumpindex=   length(opt.wh);
+    disp(  'Not using SGE to fit PD. Using the local machine instead. This may take a very long time !!!');
+    if (~exist(dirname,'dir')),
+        mkdir(dirname);
+    end
+    jumpindex = length(opt.wh);
     opt.jumpindex=jumpindex;
     
-    mrQ_CoilPD_gridFit(opt,jumpindex,1);
-    save(opt.logname,'opt');
-end
+    % TODO Write this as a parfor loop
+    fprintf('Attempting to use parallel computing toolbox...\n');
+    vistaInitParpool('performance');
+    parfor i = 1:ceil(length(opt.wh)/jumpindex)
+        mrQ_CoilPD_gridFit(opt,jumpindex,i);
+    end
+    
+        save(opt.logname,'opt');
 
 end
