@@ -205,7 +205,7 @@ clear MM M M1 mask
 %% Lets Fit
 
 a=version('-date');
-if str2num(a(end-3:end))==2012
+if str2num(a(end-3:end))>=2012
     options = optimset('Algorithm', 'levenberg-marquardt','Display', 'iter' ,'Tolx',1e-6,'MaxIter',100,'MaxFunEvals',inf);
 else
     options =  optimset('LevenbergMarquardt','on','Display', 'iter','Tolx',1e-6,'MaxIter',100,'MaxFunEvals',inf);%'TolF',1e-12

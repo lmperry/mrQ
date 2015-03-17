@@ -199,7 +199,7 @@ function [res resnorm exitflag num use nopossible] =FitDat(nn,inDat1,bm1,x01,use
 %initilaized the fit
 %qoptions = optimset('LevenbergMarquardt','on','Tolx',1e-6,'TolF',1e-6,'MaxIter',300,'MaxFunEvals',inf,'Display', 'iter');
 a=version('-date');
-if str2num(a(end-3:end))==2012
+if str2num(a(end-3:end))>=2012
     options = optimset('Algorithm', 'levenberg-marquardt','Display', 'off','Tolx',1e-12);
 else
     options = optimset('LevenbergMarquardt','on','Display', 'off','Tolx',1e-12);%'TolF',1e-12
