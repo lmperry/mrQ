@@ -10,6 +10,10 @@ and the following patent application
 
 >Improved methods for detecting abnormalities in soft tissue using magnetic resonance imaging (MRI),USSN 61/437,587
 
+For application see:
+
+>Yeatman JD,Wandell BA,Mezer A. Lifespan maturation and degeneration of human brain white matter. Nature Communications ,2014. http://www.nature.com/ncomms/2014/140917/ncomms5932/abs/ncomms5932.html
+
 For more information please contact
 
 >avivmezer@gmail.com
@@ -44,6 +48,18 @@ For more information please contact
 - Parallel computing environment (e.g., Sun Grid Engine) 
     - *Not required, but it will make a big difference for running time.*
 
+    Optional:
+
+    You can convert your dicom to nifti:
+    We use code that was developed for the NIMS project: (https://scitran.stanford.edu/nims/).
+    
+    This code allows an automatic way to make nifti and also save the hdr info:
+    https://registry.hub.docker.com/u/vistalab/nimsdata/ .
+    You can also find the code they use inside.
+
+It also an option to you different nifti files. See details below.
+
+
 ####Matlab code####
 mrQ requires the following openly distributed code repositories:
 
@@ -76,10 +92,16 @@ A modified version of this code is integrated within the mrQ software.
 GE scanner’s should change the scanner default by editing the a_gzrf0 cv: a_gzrf0=0
 3. Use fat suppression. Fat suppression should be spatial-spectral to avoid any slice-selective imperfections. Note: This is the default with GE scanners when slices are less than 4mm thick.
 
-##Scanner dicom types##
+##Scanner dicom types and Nifti##
 The mrQ software was built around GE dicoms. It is possible that different vendors have different conventions in saving dicom information (e.g., header information, data ordering).
 
 We are currently working on making the code compatible with different vendor’s dicom conventions. Please let us know if you experience any issues with reading dicoms when using the software. 
+
+Nifti:
+
+If you use the NIMS convertor to make a nifti your file will have all the hdr information and you don’t need the dicoms.
+
+if you convert the dicom to nifti yourself you will need to add the hdr info (see example below).
 
 ##Data organization##
 ####Follow these guidelines when organizing your data:####
@@ -104,18 +126,82 @@ For an example of this structure see ‘runScript’ at http://purl.stanford.edu
     - mrQ=mrQ_Set(mrQ,field name,field value)
 
 For a given data set where SEIR scans are organized into 4 folders named  '0005' '0006' '0007' '0008' and SPGR scans are organized into 4 folders named '0009' '0010' '0011' '0012' the following can serve as an example script: 
-
-    % define the SEIR scans by the session’s 4 characters 
-    mrQ=mrQ_Set(mrQ,'SEIR',{'0005' '0006' '0007' '0008'})
+```matlab
+% define the SEIR scans by the session’s 4 characters 
+mrQ=mrQ_Set(mrQ,'SEIR',{'0005' '0006' '0007' '0008'})
     
-    % define the SPGR scans by the session 4 characters
-    mrQ=mrQ_Set(mrQ,'SPGR',{'0009' '0010' '0011' '0012'})
+% define the SPGR scans by the session 4 characters
+mrQ=mrQ_Set(mrQ,'SPGR',{'0009' '0010' '0011' '0012'})
 
-    % make a subject name
-    mrQ=mrQ_Set(mrQ,'sub','Examp')
+% make a subject name
+mrQ=mrQ_Set(mrQ,'sub','Examp')
 
-    % run
-    mrQ_run(mrQ.name) 
+% run
+mrQ_run(mrQ.name)
+```
+Running with nifti:
+
+using nifti by NIMS (and Later versions (>V.1) of mrQ)
+```matlab
+% create mrQ stricture and define the datadir where the nifti are  saved and outdir where mrQ output will be saved.
+mrQ = mrQ_Create(dataDir,[],outDir);
+% One can set many different fit properties by mrQ_set.m
+% 
+% get the image and hdr info form the nifti
+mrQ = mrQ_arrangeData_nimsfs(mrQ);
+% run it
+mrQ_run(mrQ.name)
+```
+using diiffrent nifti NOT by NIMS (and Later versions (>V.1) of mrQ)
+```matlab
+% create mrQ stricture and define the datadir where the nifti are  saved and outdir where mrQ output will be saved.
+mrQ = mrQ_Create(dataDir,[],outDir);
+% Onecan set many different fit properties by mrQ_set.m
+%
+% Make a structure of  images and hdr info of the the nifti
+% define the SEIR hdr info:
+%
+% mrQ.RawDir is the location where the  nifti are saved
+inputData_spgr.rawDir =mrQ.RawDir;
+%
+% A list of nifti names  (a unique string from the names is enough)
+inputData_spgr.name={'0009' '0010' '0011' '0012'};
+%
+% the TR of each nifti in the list (msec)
+inputData_spgr.TR=[12 12 12 12];
+%
+% The TE of each nifti in the list (msec)
+inputData_spgr.TE=[2.27 2.27 2.27 2.27];
+%
+% The flip angle of each nifti in the list (degree)
+inputData_spgr.flipAngle=[4 10 20 30];
+%
+% The  field strength of each nifti in the list (Tesla)
+inputData_spgr.fieldStrength=[3 3 3 3];
+%
+% define the SEIR hdr info:
+%
+%   mrQ.RawDir is the location where the  nifti are saved
+inputData_seir.rawDir=mrQ.RawDir;
+%
+% A list of nifti names  (a unique string from the names is enough)
+inputData_seir.name={ '0005'  '0006'  '0007'  '0008'};
+
+% the TR of each nifti in the list (msec)
+inputData_seir.TR=[3000 3000 3000 3000 ];
+
+% The TE of each nifti in the list (msec)
+inputData_seir.TE=[49 49 49 49];
+
+% The inversion time of each nifti in the list (msec)
+inputData_seir.IT=[ 50  400 1200 2400];
+
+% add the nifti info to the mrQ stracture
+mrQ = mrQ_arrangeData_nimsfs(mrQ,inputData_spgr,inputData_seir);
+%
+%run it
+mrQ_run(mrQ.name)
+```
 
 ##Versions##
 Version 1 (v.1) is the code to replicate that was used in Nature medicine mezer at. el. 2013 article: https://github.com/mezera/mrQ/tree/v1.0
@@ -129,10 +215,10 @@ mrQ takes advantage of parallel computing in three steps within analysis.
 3. To calculate the coil gain for different bloc in image space.
 
 mrQ is written to take advantage of the Sun grid parallel computing engine. Each user will need to change the specific calls to the grid according to the parallel computing environment available. One can turn off all those parallel jobs by editing the following setting when creating the mrQ structure:
-
-    mrQ=mrQ_Set(mrQ,'sungrid’,0);
-    mrQ=mrQ_Set(mrQ,’proclus’,0);
-
+```matlab
+mrQ=mrQ_Set(mrQ,'sungrid’,0);
+mrQ=mrQ_Set(mrQ,’proclus’,0);
+```
 If parallel computing is not available to you please contact us, as we are currently working on a general version of the code that does not rely on parallel computations. 
 
 ## T1 fit non linear vs. weighted least square
@@ -142,10 +228,10 @@ to avoid the long .computing (may days on single CPU for all brain  1mm voxel). 
 See: Linear least-squares method for unbiased estimation of T1 from SPGR signals. Chang LC, Koay CG, Basser PJ, Pierpaoli C. Magn Reson Med. 2008 Aug;60(2):496-501.
 
 to run it use this setting:
-
-    mrQ=mrQ_Set(mrQ,'wl’,1);
-    mrQ=mrQ_Set(mrQ,’lsq’,0);
-
+```matlab
+mrQ=mrQ_Set(mrQ,'wl’,1);
+mrQ=mrQ_Set(mrQ,’lsq’,0);
+```
 The weighted least square will take few minutes using weighted least square or few hours on a single CPU. 
 
 ##mrQ analysis overview##
