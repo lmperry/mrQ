@@ -4,12 +4,12 @@ function mrQ=mrQ_T1M0_Fit(mrQ,B1File,MaskFile,outDir,dataDir,clobber)
 % In this function, the T1-M0 fit is performed. The user is able to
 % choosemr
 % from among three options: linear fit, least squares (LSQ) fit, or a
-% linear weighted fit. 
+% linear weighted fit.
 %        1) The linear fit is most prone to bias, but it is also
 %             the fastest. The linear fit is performed automatically.
 %        2) The LSQ fit will take the longest (days) so it is
-%             recommended to use the LSQ fit only when SunGrid (or another 
-%             grid) is available. 
+%             recommended to use the LSQ fit only when SunGrid (or another
+%             grid) is available.
 %        3) The linear weighted fit is performed as described in the
 %             article by Chang et al (2008) in Magn Reson Med. The default
 %             is for the linear weighted fit, and not the LSQ fit, to be
@@ -46,7 +46,7 @@ if notDefined('outDir');
     outDir =dataDir;
 end
 
-% Clobber flag: 
+% Clobber flag:
 % Overwrite existing fit, if it already exists, and redo the T1 fit
 if notDefined('clobber')
     clobber = false;
@@ -74,7 +74,7 @@ if ~isfield(mrQ,'LW');
     mrQ.LW = false;
 end
 
-if lsqfit==0 
+if lsqfit==0
     mrQ.LW = true;
 elseif lsqfit==1
     mrQ.LW = false;
@@ -98,7 +98,7 @@ else
     B1=niftiRead(B1File);
     B1=double(B1.data);
 end
-%% III. Linear Fit 
+%% III. Linear Fit
 % Linear fit is used to calculate T1 and M0.
 % (Linear fitting can bias the fit, but it's very fast)
 
@@ -107,44 +107,44 @@ T1LFfile= fullfile(outDir,['T1_map_lin.nii.gz']);
 M0LFfile= fullfile(outDir,['M0_map_lin.nii.gz']);
 
 if (exist( T1LFfile,'file') && exist( M0LFfile,'file')  && exist( MaskFile,'file') && ~clobber),
-    
+
     disp(['Loading existing T1 and M0 linear fit'])
-    
+
     T1L=readFileNifti(T1LFfile);
     M0L=readFileNifti(M0LFfile);
     HeadMask=readFileNifti(MaskFile);
-    
+
     T1L=double(T1L.data);
     M0L=double(M0L.data);
     HeadMask=logical(HeadMask.data);
-        
+
 else
-    
+
     disp('Performing linear fit of T1 and M0...');
-    
+
     flipAngles = [s(:).flipAngle];
     tr = [s(:).TR];
-    
+
     % Check that all TRs are the same across all the scans in S
     if(~all(tr == tr(1))), error('TR''s do not match!'); end
     tr = tr(1);
-    
+
     % Compute a linear fit of the the T1 estimate for all voxels.
     % M0: PD = M0 * G * exp(-TE / T2*).
     [T1L,M0L] = relaxFitT1(cat(4,s(:).imData),flipAngles,tr,B1);
-    
-    % Let's calculate a new mask 
-    
-    
+
+    % Let's calculate a new mask
+
+
     [HeadMask, mrQ]=CalculateFullMask(mrQ,T1L,M0L,outDir); %see below for function
     % Zero-out the values that fall outside of the brain mask
     T1L(~HeadMask) = 0;
-    M0L(~HeadMask) = 0;    
-    
+    M0L(~HeadMask) = 0;
+
     % Save the T1 and PD data
     dtiWriteNiftiWrapper(single(T1L), xform,T1LFfile);
     dtiWriteNiftiWrapper(single(M0L), xform, M0LFfile);
-    
+
     mrQ.T1_B1_LFit=T1LFfile;
     mrQ.M0_B1_LFit=M0LFfile;
 end;
@@ -158,42 +158,42 @@ end
 %% IV. LSQ Fit
 if lsqfit==1,
     % LSQ fit of M0 and T1. Use the SunGrid to accelerate this fit
-    
+
     disp('Fitting T1 and PD by LSQ: This takes time - SGE can be used!!!');
     T1lsqfile= fullfile(outDir,['T1_map_lsq.nii.gz']);
     M0lsqfile= fullfile(outDir,['M0_map_lsq.nii.gz']);
-    
+
     % If the fits have been performed, then we simply load them.
-    
+
     if (exist( T1lsqfile,'file') && exist( M0lsqfile,'file') && ~clobber),
-        
+
         disp(['Loading existing T1 and M0 LSQ fit'])
         T1=readFileNifti(T1lsqfile);
         M0=readFileNifti(M0lsqfile);
         T1=double(T1.data);
         M0=double(M0.data);
-        
+
     else
         if clobber && (exist([outDir '/tmpSG'],'dir'))
-            % In the case we start over and there are old fits, 
+            % In the case we start over and there are old fits,
             % we will delete them
             eval(['! rm -r ' outDir '/tmpSG']);
-        end      
-        
+        end
+
         disp(['Fitting LSQ T1 and M0']);
         flipAngles = [s(:).flipAngle];
         tr = [s(:).TR];
-        
+
         Gain=double(HeadMask);
-        
+
         % LSQ fit of M0 and T1: Use the SunGrid to accelerate this fit
 %         [T1,M0] = mrQ_fitT1PD_LSQ(s2,HeadMask,tr,flipAngles,M0L,T1L,Gain,B1,outDir,xform,SunGrid,[],sub,mrQ.proclus);
       [T1,M0] = mrQ_fitT1PD_LSQ(s,HeadMask,tr,flipAngles,M0L,T1L,Gain,B1,outDir,xform,mrQ);
-              
+
         % Save the T1 and M0 data
         dtiWriteNiftiWrapper(single(T1), xform,T1lsqfile);
         dtiWriteNiftiWrapper(single(M0), xform, M0lsqfile);
-        
+
         mrQ.T1_B1_lsqFit=T1lsqfile;
         mrQ.M0_B1_lsqFit=M0lsqfile;
     end
@@ -206,32 +206,32 @@ if LWfit==1
     T1LFfile= fullfile(outDir,['T1_map_lin.nii.gz']);
     M0LFfile= fullfile(outDir,['M0_map_Wlin.nii.gz']);
     M0WLFfile= fullfile(outDir,['M0_map_Wlin.nii.gz']);
-    
+
     if (exist( T1WLFfile,'file') && exist( M0WLFfile,'file')  && ~clobber),
-        
+
         disp(['Loading existing T1 and M0 weighted linear fit'])
         T1=readFileNifti(T1WLFfile);
         M0=readFileNifti(M0WLFfile);
         T1=double(T1.data);
         M0=double(M0.data);
-        
+
     else
-        
+
         disp('Performing weighted linear fit of T1 and M0 with B1 correction...');
         flipAngles = [s(:).flipAngle];
         tr = [s(:).TR];
-        
+
         % Check that all TRs are the same across all the scans in S
         if(~all(tr == tr(1))), error('TR''s do not match!'); end
         tr = tr(1);
-        
+
         % Compute a linear fit of the the T1 estimate for all voxels.
         % M0: PD = M0 * G * exp(-TE / T2*).
-        
+
         Gain=double(HeadMask);
-        
+
 %         [T1w, T1,M0w, MO] = mrQ_T1M0_LWFit(s,HeadMask,tr,flipAngles,Gain,B1,outDir,xform,SunGrid,[],sub,mrQ.proclus);
-        
+
 %         [T1w, T1,M0w, M0] = mrQ_T1M0_LWFit(s,HeadMask,tr,flipAngles,Gain,B1,outDir,xform,mrQ.SunGrid);
                 [T1w, T1,M0w, M0] = mrQ_T1M0_LWFit(s,HeadMask,tr,flipAngles,Gain,B1,outDir,xform,mrQ);
 
@@ -240,13 +240,13 @@ if LWfit==1
         dtiWriteNiftiWrapper(single(M0), xform, M0LFfile);
         dtiWriteNiftiWrapper(single(T1w), xform,T1WLFfile);
         dtiWriteNiftiWrapper(single(M0w), xform, M0WLFfile);
-        
+
         mrQ.T1_B1_LWFit=T1WLFfile;
         mrQ.M0_B1_LWFit=M0WLFfile;
-        
+
         mrQ.T1_B1_LFit=T1LFfile;
         mrQ.M0_B1_LFit=M0LFfile;
-        
+
     end
 end
 
@@ -259,8 +259,8 @@ end
      %%%%%
       %%%
        %
-       
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [mask, mrQ]=CalculateFullMask(mrQ,t1,M0,outDir)
 %% one more mask anywhere we have signal
 
@@ -274,16 +274,16 @@ end
 
 % M=mean(t1(BM));
 % S=std(t1(BM));
-% 
+%
 % up=min(10000,M+2*S);
 % down=max(0,M-2*S);
 % t1(t1<down)=down;
 % t1(t1>up)=up;
-% 
+%
 % t1(isnan(t1))=down;
-% 
+%
 % t1(isinf(t1))=up;
-% 
+%
 % mask1=t1>prctile(t1(BM),0.1) & t1<up;
 % [mask1] = ordfilt3D(mask1,6);
 % for i=1:size(mask1,3)
@@ -301,26 +301,47 @@ wmmask    = BM & t1>0.850 & t1<1.050;
 [wmmask1] = ordfilt3D(wmmask,6);
 wmmask    = wmmask & wmmask1; clear wmmask1;
 
-[params1,gains,rs] = fit3dpolynomialmodel(M0,wmmask==1,2);
-wmmask             = logical(wmmask);
+% [params1,gains,rs] = fit3dpolynomialmodel(M0,wmmask==1,2);
+% wmmask             = logical(wmmask);
+%
+%  Imsz = size(BM);
+%
+% % Construct a three-dimenstional polynomial matrix - KNK code
+% [Poly,str] = constructpolynomialmatrix3d(Imsz,find(ones(Imsz)),2);
+% %   Returns <Poly>, a matrix of dimensions length(find(ones(Imsz))) x N
+% %   with polynomial basis functions evaluated at <find(ones(Imsz))> in
+% %   the columns.  the polynomial basis functions are evaluated
+% %   over the range [-1,1] which is presumed to correspond to
+% %   the beginning and ending element along each of the three dimensions.
+% %   (if a dimension has only one element, the values are all set to 1.)
+% %   also, return <str>, the algebraic expression that corresponds to
+% %   the columns of <Poly>.  'x' refers to the first matrix dimension; 'y'
+% %   refers to the second matrix dimension; 'z' refers to the third
+% %   matrix dimension.
+%
+% % Calculate the gain and proton density
+% Gain = reshape(Poly*params1',Imsz);
 
- Imsz = size(BM);
+% --- Alternative approach to avoid matlab symbolic toolbox 
 
-% Construct a three-dimenstional polynomial matrix - KNK code
-[Poly,str] = constructpolynomialmatrix3d(Imsz,find(ones(Imsz)),2);
-%   Returns <Poly>, a matrix of dimensions length(find(ones(Imsz))) x N
-%   with polynomial basis functions evaluated at <find(ones(Imsz))> in
-%   the columns.  the polynomial basis functions are evaluated
-%   over the range [-1,1] which is presumed to correspond to
-%   the beginning and ending element along each of the three dimensions.
-%   (if a dimension has only one element, the values are all set to 1.)
-%   also, return <str>, the algebraic expression that corresponds to
-%   the columns of <Poly>.  'x' refers to the first matrix dimension; 'y'
-%   refers to the second matrix dimension; 'z' refers to the third
-%   matrix dimension.
+% Build the polynomial basis (orthogonal) for the whole M0
+basis = mrvCreatePolybasis(size(M0), 2, 'svd');
 
-% Calculate the gain and proton density
-Gain = reshape(Poly*params1',Imsz);
+% But we only fit over the range of the wmmask
+basis0 = basis(wmmask(:),:);
+M0mask = M0(wmmask(:));
+
+% Because some positions are ignored, we can not use the transpose of the
+% orthogonal basis.  So we have to solve using the usual inverse operator.
+params = basis0\M0mask;   % Estimate the parameters of the polynomial basis
+
+% Use the parameters to get the gain across the entire M0
+Gain = basis*params;
+
+% Reshape to match M0
+Gain = reshape(Gain,size(M0));
+
+% ---
 M0   = M0./Gain;
 
 % mask
@@ -349,4 +370,3 @@ mask=logical(mask1+mask +HM+BM);
 FullMaskFile= fullfile(outDir,'FullMask.nii.gz');
 dtiWriteNiftiWrapper(single(mask), xform,FullMaskFile);
 mrQ.FullMaskFile=FullMaskFile;
-
