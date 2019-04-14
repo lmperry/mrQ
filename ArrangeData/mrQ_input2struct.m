@@ -54,6 +54,9 @@ for i=1:length(input.name)
     % example, if you use mrQ_initInputData, they will all be full paths.
     if strcmp(input.name{i},which(input.name{i}))
         tmp=input.name{i};
+    elseif exist(input.name{i}, 'file')
+        tmp=input.name{i};
+        disp(input.name{i});
     else
         cmd=fullfile(input.rawDir,['*' input.name{i} '*']); % BF input.dir = input.rawDir
         tmp=ls(cmd);
